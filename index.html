@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>숫자 야구: 코알라 에디션</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAx_NzeYy6VU_IMPtrJ9NCNKzwYlCKUDHE",
+      authDomain: "bball-game-9936c.firebaseapp.com",
+      projectId: "bball-game-9936c",
+      storageBucket: "bball-game-9936c.firebasestorage.app",
+      messagingSenderId: "1096857454514",
+      appId: "1:1096857454514:web:8f18f4d65a1a918c32c6ab"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function generateAnswer() {
+      const digits = [];
+      while (digits.length < 3) {
+        const n = Math.floor(Math.random() * 10);
+        if (!digits.includes(n)) digits.push(n);
+      }
+      return digits.join('');
+    }
+
+    async function saveAnswer(answer) {
+      await setDoc(doc(db, 'games', 'currentGame'), {
+        answer,
+        createdAt: new Date()
+      });
+    }
+
+    async function loadAnswer() {
+      const docSnap = await getDoc(doc(db, 'games', 'currentGame'));
+      if (docSnap.exists()) {
+        return docSnap.data().answer;
+      } else {
+        const newAnswer = await generateAnswer();
+        await saveAnswer(newAnswer);
+        return newAnswer;
+      }
+    }
+
+    let currentInput = '';
+    let answer = '';
+
+    const inputDisplay = document.getElementById('input-display');
+    const keypad = document.getElementById('keypad');
+    const resultLog = document.getElementById('result-log');
+    const gameInfo = document.getElementById('game-info');
+
+    function updateInputDisplay() {
+      inputDisplay.innerText = currentInput.padEnd(3, '_').split('').join(' ');
+    }
+
+    function addGuessResult(guess, result) {
+      const entry = document.createElement('div');
+      entry.className = 'guess-entry';
+      entry.innerText = `🔢 ${guess} → ${result}`;
+      resultLog.prepend(entry);
+    }
+
+    function checkGuess(guess, answer) {
+      let strikes = 0, balls = 0;
+      for (let i = 0; i < 3; i++) {
+        if (guess[i] === answer[i]) {
+          strikes++;
+        } else if (answer.includes(guess[i])) {
+          balls++;
+        }
+      }
+      if (strikes === 0 && balls === 0) return 'OUT';
+      return '⚫'.repeat(strikes) + '⚪'.repeat(balls);
+    }
+
+    function handleConfirm() {
+      if (currentInput.length !== 3) return;
+      const result = checkGuess(currentInput, answer);
+      addGuessResult(currentInput, result);
+      if (result === '⚫⚫⚫') {
+        gameInfo.innerText = '🎉 홈런! 코알라도 감탄 중!';
+      }
+      currentInput = '';
+      updateInputDisplay();
+    }
+
+    function createKeypad() {
+      keypad.innerHTML = '';
+      for (let i = 1; i <= 9; i++) {
+        const btn = document.createElement('button');
+        btn.innerText = i;
+        btn.onclick = () => {
+          if (!currentInput.includes(i.toString()) && currentInput.length < 3) {
+            currentInput += i.toString();
+            updateInputDisplay();
+          }
+        };
+        keypad.appendChild(btn);
+      }
+      const zeroBtn = document.createElement('button');
+      zeroBtn.innerText = '0';
+      zeroBtn.onclick = () => {
+        if (!currentInput.includes('0') && currentInput.length < 3) {
+          currentInput += '0';
+          updateInputDisplay();
+        }
+      };
+      keypad.appendChild(zeroBtn);
+
+      const delBtn = document.createElement('button');
+      delBtn.innerText = '←';
+      delBtn.onclick = () => {
+        currentInput = currentInput.slice(0, -1);
+        updateInputDisplay();
+      };
+      keypad.appendChild(delBtn);
+
+      const okBtn = document.createElement('button');
+      okBtn.innerText = '확인';
+      okBtn.onclick = handleConfirm;
+      keypad.appendChild(okBtn);
+    }
+
+    loadAnswer().then((ans) => {
+      answer = ans;
+      gameInfo.innerText = '게임 시작!';
+      updateInputDisplay();
+      createKeypad();
+    });
+  </script>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: #eaf7f6 url('https://upload.wikimedia.org/wikipedia/commons/6/63/Koala_climbing_tree.jpg') no-repeat right bottom;
+      background-size: 300px;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #2c3e50;
+    }
+    #input-display {
+      font-size: 2rem;
+      margin: 10px 0;
+      letter-spacing: 10px;
+    }
+    .keypad button {
+      width: 60px;
+      height: 60px;
+      font-size: 1.5rem;
+      margin: 5px;
+      border: none;
+      border-radius: 10px;
+      background: #ffd54f;
+      cursor: pointer;
+    }
+    .keypad {
+      margin: 20px 0;
+    }
+    .keypad button:active {
+      background: #ffca28;
+    }
+    #result-log {
+      margin-top: 20px;
+      text-align: left;
+      max-width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .guess-entry {
+      font-size: 1.2rem;
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🐨 숫자 야구: 코알라 에디션</h1>
+  <div id="game-info">게임 로딩 중...</div>
+  <div id="input-display">_ _ _</div>
+  <div class="keypad" id="keypad"></div>
+  <div id="result-log"></div>
+</body>
+</html>
