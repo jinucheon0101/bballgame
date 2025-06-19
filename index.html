@@ -2,10 +2,10 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>숫자 야구: 코알라 에디션</title>
+  <title>제이씨의 야구게임</title>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAx_NzeYy6VU_IMPtrJ9NCNKzwYlCKUDHE",
@@ -31,28 +31,38 @@
     async function saveAnswer(answer) {
       await setDoc(doc(db, 'games', 'currentGame'), {
         answer,
-        createdAt: new Date()
+        createdAt: new Date(),
+        turns: 0,
+        history: []
       });
     }
 
     async function loadAnswer() {
       const docSnap = await getDoc(doc(db, 'games', 'currentGame'));
       if (docSnap.exists()) {
-        return docSnap.data().answer;
+        return docSnap.data();
       } else {
         const newAnswer = await generateAnswer();
         await saveAnswer(newAnswer);
-        return newAnswer;
+        return { answer: newAnswer, turns: 0, history: [] };
       }
     }
 
     let currentInput = '';
     let answer = '';
+    let turns = 0;
+    const maxTurns = 10;
+    let playerName = '';
 
     const inputDisplay = document.getElementById('input-display');
     const keypad = document.getElementById('keypad');
     const resultLog = document.getElementById('result-log');
     const gameInfo = document.getElementById('game-info');
+    const answerBtn = document.getElementById('reveal-answer');
+    const rankingList = document.getElementById('ranking-list');
+    const startScreen = document.getElementById('start-screen');
+    const nicknameInput = document.getElementById('nickname-input');
+    const startButton = document.getElementById('start-button');
 
     function updateInputDisplay() {
       inputDisplay.innerText = currentInput.padEnd(3, '_').split('').join(' ');
@@ -78,12 +88,22 @@
       return '⚫'.repeat(strikes) + '⚪'.repeat(balls);
     }
 
-    function handleConfirm() {
-      if (currentInput.length !== 3) return;
+    async function handleConfirm() {
+      if (currentInput.length !== 3 || turns >= maxTurns) return;
       const result = checkGuess(currentInput, answer);
       addGuessResult(currentInput, result);
-      if (result === '⚫⚫⚫') {
-        gameInfo.innerText = '🎉 홈런! 코알라도 감탄 중!';
+      turns++;
+      if (turns >= maxTurns && result !== '⚫⚫⚫') {
+        gameInfo.innerText = `😢 턴 종료! 정답은 ${answer}`;
+      } else if (result === '⚫⚫⚫') {
+        gameInfo.innerText = `🎉 홈런! ${playerName}님 축하해요! (${turns}턴)`;
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        await updateDoc(doc(db, 'games', 'currentGame'), {
+          history: arrayUnion({ player: playerName, turns, timestamp: Date.now() })
+        });
+        renderRanking();
+      } else {
+        gameInfo.innerText = `턴: ${turns}/${maxTurns}`;
       }
       currentInput = '';
       updateInputDisplay();
@@ -126,13 +146,36 @@
       keypad.appendChild(okBtn);
     }
 
-    loadAnswer().then((ans) => {
-      answer = ans;
-      gameInfo.innerText = '게임 시작!';
+    async function renderRanking() {
+      const docSnap = await getDoc(doc(db, 'games', 'currentGame'));
+      const history = (docSnap.data().history || []).sort((a, b) => a.turns - b.turns);
+      rankingList.innerHTML = '';
+      history.forEach((entry, index) => {
+        const li = document.createElement('li');
+        li.innerText = `${index + 1}. ${entry.player} - ${entry.turns}턴`;
+        rankingList.appendChild(li);
+      });
+    }
+
+    answerBtn.onclick = () => {
+      alert(`정답은 ${answer} 입니다! 🤫`);
+    };
+
+    document.getElementById('start-button').onclick = async () => {
+      const name = nicknameInput.value.trim();
+      if (!name) return alert('닉네임을 입력해주세요!');
+      playerName = name;
+      startScreen.style.display = 'none';
+      const gameData = await loadAnswer();
+      answer = gameData.answer;
+      turns = gameData.turns || 0;
+      gameInfo.innerText = `게임 시작! 턴: ${turns}/${maxTurns}`;
       updateInputDisplay();
       createKeypad();
-    });
+      renderRanking();
+    };
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -141,8 +184,35 @@
       padding: 20px;
       text-align: center;
     }
-    h1 {
-      color: #2c3e50;
+    h1 { color: #2c3e50; }
+    #game-guide {
+      background-color: #fff3e0;
+      border: 1px solid #ffc107;
+      border-radius: 12px;
+      padding: 15px;
+      margin: 10px auto 20px;
+      max-width: 400px;
+      text-align: left;
+      position: sticky;
+      top: 0;
+      z-index: 999;
+    }
+    #game-guide h2 { margin-top: 0; }
+    #game-guide ul { padding-left: 20px; }
+    #start-screen input {
+      font-size: 1rem;
+      padding: 8px;
+      border-radius: 10px;
+      border: 1px solid #aaa;
+    }
+    #start-screen button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border-radius: 10px;
+      background-color: #90caf9;
+      border: none;
+      cursor: pointer;
     }
     #input-display {
       font-size: 2rem;
@@ -159,12 +229,8 @@
       background: #ffd54f;
       cursor: pointer;
     }
-    .keypad {
-      margin: 20px 0;
-    }
-    .keypad button:active {
-      background: #ffca28;
-    }
+    .keypad { margin: 20px 0; }
+    .keypad button:active { background: #ffca28; }
     #result-log {
       margin-top: 20px;
       text-align: left;
@@ -172,17 +238,57 @@
       margin-left: auto;
       margin-right: auto;
     }
-    .guess-entry {
-      font-size: 1.2rem;
+    .guess-entry { font-size: 1.2rem; margin-bottom: 5px; }
+    #reveal-answer {
+      margin-top: 10px;
+      background-color: #90caf9;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    #ranking-board {
+      margin-top: 30px;
+    }
+    #ranking-board ul {
+      list-style: none;
+      padding: 0;
+    }
+    #ranking-board li {
+      font-size: 1rem;
       margin-bottom: 5px;
     }
   </style>
 </head>
 <body>
-  <h1>🐨 숫자 야구: 코알라 에디션</h1>
+  <div id="game-guide">
+    <h2>📘 게임 가이드</h2>
+    <p>⚾️ <strong>제이씨의 야구게임</strong>에 오신 걸 환영해요! 귀여운 🐶와 함께해요~</p>
+    <p>세 자리 숫자를 맞히는 게임이에요! (중복 숫자 없음)</p>
+    <ul>
+      <li>⚫ <strong>스트라이크</strong>: 숫자와 위치가 모두 맞음</li>
+      <li>⚪ <strong>볼</strong>: 숫자는 맞지만 위치가 다름</li>
+      <li><strong>OUT</strong>: 어떤 숫자도 포함되지 않음</li>
+    </ul>
+    <p>10턴 안에 정답을 맞히면 🎉 홈런!</p>
+  </div>
+
+  <h1>⚾ 제이씨의 야구게임</h1>
+  <div id="start-screen">
+    <h2>닉네임을 입력하세요</h2>
+    <input type="text" id="nickname-input" placeholder="닉네임 입력" />
+    <br />
+    <button id="start-button">게임 시작</button>
+  </div>
   <div id="game-info">게임 로딩 중...</div>
   <div id="input-display">_ _ _</div>
   <div class="keypad" id="keypad"></div>
+  <button id="reveal-answer">정답 보기</button>
   <div id="result-log"></div>
+  <div id="ranking-board">
+    <h3>🏆 랭킹</h3>
+    <ul id="ranking-list"></ul>
+  </div>
 </body>
 </html>
