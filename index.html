@@ -5,7 +5,7 @@
   <title>제이씨의 야구게임</title>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
     import confetti from "https://cdn.skypack.dev/canvas-confetti";
 
     const firebaseConfig = {
@@ -51,8 +51,7 @@
       await setDoc(doc(db, 'games', 'currentGame'), {
         answer,
         createdAt: new Date(),
-        turns: 0,
-        history: [] // 초기화 시 history 제거
+        turns: 0
       });
     }
 
@@ -200,6 +199,9 @@
       gameInfo.innerText = `게임 시작! 턴: ${turns}/${maxTurns}`;
       updateInputDisplay();
       createKeypad();
+    };
+
+    window.onload = () => {
       renderRanking();
     };
   </script>
