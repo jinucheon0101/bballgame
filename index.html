@@ -5,7 +5,7 @@
   <title>제이씨의 야구게임</title>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, deleteField } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
     import confetti from "https://cdn.skypack.dev/canvas-confetti";
 
     const firebaseConfig = {
@@ -36,6 +36,8 @@
     const answerBtn = document.getElementById('reveal-answer');
     const startScreen = document.getElementById('start-screen');
     const nicknameInput = document.getElementById('nickname-input');
+    const rankingBoard = document.getElementById('ranking-board');
+    const resetBtn = document.getElementById('reset-ranking');
 
     async function generateAnswer() {
       const digits = [];
@@ -100,6 +102,19 @@
       clearInterval(timerInterval);
     }
 
+    async function renderRanking() {
+      const docSnap = await getDoc(doc(db, 'games', 'currentGame'));
+      if (!docSnap.exists() || !docSnap.data().history) return;
+      const history = docSnap.data().history;
+      const sorted = [...history].sort((a, b) => a.turns - b.turns || a.seconds - b.seconds);
+      rankingBoard.innerHTML = '<h3>🏆 랭킹 보드</h3>';
+      sorted.forEach((entry, i) => {
+        const div = document.createElement('div');
+        div.innerText = `${i + 1}. ${entry.player} - ${entry.turns}턴 / ${entry.seconds}초`;
+        rankingBoard.appendChild(div);
+      });
+    }
+
     async function handleConfirm() {
       if (currentInput.length !== 3 || turns >= maxTurns) return;
       const result = checkGuess(currentInput, answer);
@@ -113,6 +128,10 @@
         stopTimer();
         gameInfo.innerText = `🎉 홈런! ${playerName}님 축하해요! (${turns}턴 / ${seconds}초)`;
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        await updateDoc(doc(db, 'games', 'currentGame'), {
+          history: arrayUnion({ player: playerName, turns, seconds })
+        });
+        renderRanking();
       } else {
         gameInfo.innerText = `턴: ${turns}/${maxTurns}`;
       }
@@ -165,6 +184,13 @@
       alert(`정답은 ${answer} 입니다! 🤫`);
     };
 
+    resetBtn.onclick = async () => {
+      await updateDoc(doc(db, 'games', 'currentGame'), {
+        history: deleteField()
+      });
+      rankingBoard.innerHTML = '<h3>🏆 랭킹 보드 (초기화됨)</h3>';
+    };
+
     document.getElementById('start-button').onclick = async () => {
       const name = nicknameInput.value.trim();
       if (!name) return alert('닉네임을 입력해주세요!');
@@ -178,6 +204,7 @@
       gameInfo.innerText = `게임 시작! 턴: ${turns}/${maxTurns}`;
       updateInputDisplay();
       createKeypad();
+      renderRanking();
     };
   </script>
   <style>
@@ -220,6 +247,8 @@
   <div class="keypad" id="keypad"></div>
   <button id="reveal-answer" style="display: none">정답 보기</button>
   <div id="result-log"></div>
+  <div id="ranking-board"></div>
+  <button id="reset-ranking">대시보드 초기화</button>
 </body>
 </html>
 
