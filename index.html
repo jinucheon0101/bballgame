@@ -34,10 +34,8 @@
     const gameInfo = document.getElementById('game-info');
     const timerDisplay = document.getElementById('timer');
     const answerBtn = document.getElementById('reveal-answer');
-    const rankingList = document.getElementById('ranking-list');
     const startScreen = document.getElementById('start-screen');
     const nicknameInput = document.getElementById('nickname-input');
-    const resetBtn = document.getElementById('reset-ranking');
 
     async function generateAnswer() {
       const digits = [];
@@ -52,8 +50,7 @@
       await setDoc(doc(db, 'games', 'currentGame'), {
         answer,
         createdAt: new Date(),
-        turns: 0,
-        history: []
+        turns: 0
       });
     }
 
@@ -64,7 +61,7 @@
       } else {
         const newAnswer = await generateAnswer();
         await saveAnswer(newAnswer);
-        return { answer: newAnswer, turns: 0, history: [] };
+        return { answer: newAnswer, turns: 0 };
       }
     }
 
@@ -116,10 +113,6 @@
         stopTimer();
         gameInfo.innerText = `🎉 홈런! ${playerName}님 축하해요! (${turns}턴 / ${seconds}초)`;
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-        await updateDoc(doc(db, 'games', 'currentGame'), {
-          history: arrayUnion({ player: playerName, turns, seconds, timestamp: Date.now() })
-        });
-        renderRanking();
       } else {
         gameInfo.innerText = `턴: ${turns}/${maxTurns}`;
       }
@@ -168,17 +161,6 @@
       keypad.appendChild(okBtn);
     }
 
-    async function renderRanking() {
-      const docSnap = await getDoc(doc(db, 'games', 'currentGame'));
-      const history = (docSnap.data().history || []).sort((a, b) => a.turns - b.turns || a.seconds - b.seconds);
-      rankingList.innerHTML = '';
-      history.forEach((entry, index) => {
-        const li = document.createElement('li');
-        li.innerText = `${index + 1}. ${entry.player} - ${entry.turns}턴 / ${entry.seconds}초`;
-        rankingList.appendChild(li);
-      });
-    }
-
     answerBtn.onclick = () => {
       alert(`정답은 ${answer} 입니다! 🤫`);
     };
@@ -196,15 +178,6 @@
       gameInfo.innerText = `게임 시작! 턴: ${turns}/${maxTurns}`;
       updateInputDisplay();
       createKeypad();
-      renderRanking();
-    };
-
-    resetBtn.onclick = async () => {
-      const confirmReset = confirm("정말 랭킹을 초기화할까요?");
-      if (!confirmReset) return;
-      await updateDoc(doc(db, 'games', 'currentGame'), { history: [] });
-      alert('랭킹이 초기화되었습니다!');
-      renderRanking();
     };
   </script>
   <style>
@@ -232,12 +205,6 @@
       background-color: #ffd54f;
       border: none;
     }
-    #ranking-board {
-      margin-top: 20px;
-      background: #fff3e0;
-      padding: 10px;
-      border-radius: 10px;
-    }
   </style>
 </head>
 <body>
@@ -253,10 +220,6 @@
   <div class="keypad" id="keypad"></div>
   <button id="reveal-answer" style="display: none">정답 보기</button>
   <div id="result-log"></div>
-  <div id="ranking-board">
-    <h3>🏆 랭킹</h3>
-    <ul id="ranking-list"></ul>
-    <button id="reset-ranking">대시보드 초기화</button>
-  </div>
 </body>
 </html>
+
