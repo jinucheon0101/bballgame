@@ -230,11 +230,26 @@
       background-color: #ffd54f;
       border: none;
     }
+    #game-guide {
+      margin-bottom: 15px;
+      background: #fff3cd;
+      padding: 10px;
+      border-radius: 10px;
+      display: inline-block;
+    }
   </style>
 </head>
 <body>
   <h1>🌿 제이씨의 야구게임</h1>
-  <div id="game-guide">⚫ = 스트라이크 / ⚪ = 볼 / OUT = 전혀 없음</div>
+  <div id="game-guide">
+    <strong>게임 가이드라인 🎮</strong><br/>
+    - 서로 다른 세 자리 숫자를 맞추는 게임이에요!<br/>
+    - 숫자만 맞고 자리가 다르면 ⚪ 볼<br/>
+    - 숫자와 자리까지 맞으면 ⚫ 스트라이크<br/>
+    - 모두 틀리면 OUT!<br/>
+    <br/>
+    총 10턴 안에 홈런을 노려보세요! ⚾
+  </div>
   <div id="start-screen">
     <input id="nickname-input" placeholder="닉네임을 입력하세요" />
     <button id="start-button">게임 시작</button>
@@ -248,5 +263,6 @@
   <div id="ranking-board"></div>
 </body>
 </html>
+
 
 
