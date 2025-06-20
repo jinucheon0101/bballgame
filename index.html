@@ -105,6 +105,9 @@
       } else {
         gameInfo.innerText = `턴: ${turns}/${maxTurns}`;
       }
+      if (turns >= 9) {
+        answerBtn.style.display = 'inline-block';
+      }
       currentInput = '';
       updateInputDisplay();
     }
@@ -143,6 +146,7 @@
       const okBtn = document.createElement('button');
       okBtn.innerText = '확인';
       okBtn.onclick = handleConfirm;
+      okBtn.id = 'confirm-btn';
       keypad.appendChild(okBtn);
     }
 
@@ -229,7 +233,12 @@
       background: #ffd54f;
       cursor: pointer;
     }
-    .keypad { margin: 20px 0; }
+    .keypad { 
+      margin: 20px 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
     .keypad button:active { background: #ffca28; }
     #result-log {
       margin-top: 20px;
@@ -247,6 +256,7 @@
       font-size: 1rem;
       border-radius: 10px;
       cursor: pointer;
+      display: none;
     }
     #ranking-board {
       margin-top: 30px;
@@ -258,6 +268,17 @@
     #ranking-board li {
       font-size: 1rem;
       margin-bottom: 5px;
+    }
+    @media (max-width: 480px) {
+      .keypad button {
+        width: 28vw;
+        height: 50px;
+        font-size: 1.2rem;
+      }
+      #confirm-btn {
+        width: 90vw;
+        margin-top: 10px;
+      }
     }
   </style>
 </head>
@@ -292,3 +313,4 @@
   </div>
 </body>
 </html>
+
