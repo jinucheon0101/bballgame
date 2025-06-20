@@ -6,12 +6,13 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
     import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+    import confetti from "https://cdn.skypack.dev/canvas-confetti";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAx_NzeYy6VU_IMPtrJ9NCNKzwYlCKUDHE",
       authDomain: "bball-game-9936c.firebaseapp.com",
       projectId: "bball-game-9936c",
-      storageBucket: "bball-game-9936c.firebasestorage.app",
+      storageBucket: "bball-game-9936c.appspot.com",
       messagingSenderId: "1096857454514",
       appId: "1:1096857454514:web:8f18f4d65a1a918c32c6ab"
     };
@@ -201,23 +202,61 @@
     resetBtn.onclick = async () => {
       const confirmReset = confirm("정말 랭킹을 초기화할까요?");
       if (!confirmReset) return;
-      const currentDoc = await getDoc(doc(db, 'games', 'currentGame'));
-      if (currentDoc.exists()) {
-        await updateDoc(doc(db, 'games', 'currentGame'), { history: [] });
-        alert('랭킹이 초기화되었습니다!');
-        renderRanking();
-      }
+      await updateDoc(doc(db, 'games', 'currentGame'), { history: [] });
+      alert('랭킹이 초기화되었습니다!');
+      renderRanking();
     };
   </script>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: #e0f7fa;
+      padding: 20px;
+      text-align: center;
+    }
+    #start-screen input {
+      padding: 10px;
+      font-size: 1rem;
+    }
+    #start-screen button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      margin-left: 10px;
+    }
+    .keypad button {
+      width: 60px;
+      height: 60px;
+      font-size: 1.5rem;
+      margin: 5px;
+      border-radius: 10px;
+      background-color: #ffd54f;
+      border: none;
+    }
+    #ranking-board {
+      margin-top: 20px;
+      background: #fff3e0;
+      padding: 10px;
+      border-radius: 10px;
+    }
+  </style>
 </head>
 <body>
-  <!-- ... 기존 내용 유지 ... -->
+  <h1>🌿 제이씨의 야구게임</h1>
+  <div id="game-guide">⚫ = 스트라이크 / ⚪ = 볼 / OUT = 전혀 없음</div>
+  <div id="start-screen">
+    <input id="nickname-input" placeholder="닉네임을 입력하세요" />
+    <button id="start-button">게임 시작</button>
+  </div>
+  <div id="game-info"></div>
+  <div id="timer"></div>
+  <div id="input-display">_ _ _</div>
+  <div class="keypad" id="keypad"></div>
+  <button id="reveal-answer" style="display: none">정답 보기</button>
+  <div id="result-log"></div>
   <div id="ranking-board">
     <h3>🏆 랭킹</h3>
     <ul id="ranking-list"></ul>
     <button id="reset-ranking">대시보드 초기화</button>
   </div>
-  <div id="timer"></div>
 </body>
 </html>
-
