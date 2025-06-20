@@ -78,17 +78,16 @@
     }
 
     function checkGuess(guess, answer) {
-      let result = '';
+      let strikes = 0, balls = 0;
       for (let i = 0; i < 3; i++) {
         if (guess[i] === answer[i]) {
-          result += '⚫'; // strike
+          strikes++;
         } else if (answer.includes(guess[i])) {
-          result += '⚪'; // ball
-        } else {
-          result += '❌'; // out
+          balls++;
         }
       }
-      return result;
+      if (strikes === 0 && balls === 0) return 'OUT';
+      return '⚫'.repeat(strikes) + '⚪'.repeat(balls);
     }
 
     function startTimer() {
@@ -247,7 +246,9 @@
     - 서로 다른 세 자리 숫자를 맞추는 게임이에요!<br/>
     - 숫자만 맞고 자리가 다르면 ⚪ 볼<br/>
     - 숫자와 자리까지 맞으면 ⚫ 스트라이크<br/>
-    - 숫자가 틀리면 ❌<br/>
+    - 숫자가 틀리면 OUT<br/>
+    <br/>
+    ※ ⚫과 ⚪의 위치는 자리를 뜻하지 않으며, <strong>단지 개수만 표시</strong>됩니다!<br/>
     <br/>
     총 10턴 안에 홈런을 노려보세요! ⚾
   </div>
@@ -264,4 +265,5 @@
   <div id="ranking-board"></div>
 </body>
 </html>
+
 
